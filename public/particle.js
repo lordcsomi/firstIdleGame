@@ -6,6 +6,18 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+// Mouse position
+let mouse = {
+  x: 0,
+  y: 0
+};
+
+// Event listener to update mouse position
+canvas.addEventListener('mousemove', function (event) {
+  mouse.x = event.clientX;
+  mouse.y = event.clientY;
+});
+
 // Define the Particle class
 class Particle {
   constructor(x, y, velocityX, velocityY, color, size, lifespan) {
@@ -32,8 +44,6 @@ class Particle {
     // Modify particle opacity based on lifespan
     this.opacity = this.lifespan / initialLifespan;
 
-    // Additional logic for particle behavior, e.g., bounce off walls
-
     // Delete particle if lifespan is zero or negative
     if (this.lifespan <= 0) {
       const particleIndex = particles.indexOf(this);
@@ -55,18 +65,18 @@ class Particle {
 const particles = [];
 
 // Parameters for particle system
-const initialLifespan = 1000; // Initial lifespan of particles
+const initialLifespan = 100; // Initial lifespan of particles
 const deletionThreshold = 10; // Lifespan threshold for particle deletion
-const velocityModifier = 0.99; // Velocity modifier for particles
+const velocityModifier = 0.98; // Velocity modifier for particles
 
 // Generate particles and add them to the array
 function generateParticles() {
-  for (let i = 0; i < 100; i++) {
-    const x = canvas.width / 2;
-    const y = canvas.height / 2;
-    const velocityX = (Math.random() - 0.5) * 5;
-    const velocityY = (Math.random() - 0.5) * 5;
-    const color = '255, 255, 255';
+  for (let i = 0; i < 1; i++) {
+    const x = mouse.x;
+    const y = mouse.y;
+    const velocityX = (Math.random() - 0.5) * 3; // x
+    const velocityY = 5; // y
+    const color = '255, 165, 0'; // Orange color for fire effect
     const size = Math.random() * 5 + 1;
 
     particles.push(new Particle(x, y, velocityX, velocityY, color, size, initialLifespan));
@@ -89,10 +99,20 @@ function updateParticles() {
       particles.splice(particleIndex, 1);
     }
   });
-
+  console.log(particles.length);
   requestAnimationFrame(updateParticles);
 }
 
 // Call the functions to generate and update particles
 generateParticles();
 updateParticles();
+setInterval(generateParticles, 100);
+
+// on resize
+window.addEventListener('resize', () => {
+    console.log('Resizing window...');
+    // update canvas size
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    }
+);
