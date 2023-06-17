@@ -1,3 +1,7 @@
+// get elements
+const canvas = document.getElementById('canvas');
+let ctx = canvas.getContext('2d');
+
 // Establish a WebSocket connection with the server
 const socket = io();
 
@@ -9,63 +13,80 @@ socket.on('message', (data) => {
 // Send a message to the server
 socket.emit('message', 'Hello, server!');
 
-// Function to create an enemy element
-function createEnemy() {
-  const enemy = document.createElement('div');
-  enemy.className = 'enemy';
-  document.getElementById('game-container').appendChild(enemy);
-
-  return enemy;
+// variables
+let name; // the name of the player
+let canvasSize = {
+  width: window.innerWidth,
+  height: window.innerHeight
 }
 
-// Function to move the enemy towards the center
-function moveEnemy(enemy) {
-  const container = document.getElementById('game-container');
-  const containerWidth = container.offsetWidth;
-  const containerHeight = container.offsetHeight;
+// enemy variables
+let enemies = []; // array to hold enemies that are currently on the screen aka enemies that are alive
+let enemyCount = 0; // number of enemies that are alive
+let enemySpeed = 1; // speed of the enemies
+let enemySpawnRate = 1000; // rate at which enemies spawn
+let enemySpawnRateChange = 0; // change in spawn rate
 
-  const enemyWidth = enemy.offsetWidth;
-  const enemyHeight = enemy.offsetHeight;
+let particles = []; // array to hold particles that are currently on the screen
+let fireLines = []; // array to hold fire lines that are currently on the screen
 
-  let posX = Math.random() < 0.5 ? -enemyWidth : containerWidth;
-  let posY = Math.random() * containerHeight;
+let score = 0; // score of the player
+let scoreMultiplier = 1; // multiplier for the score
 
-  enemy.style.left = posX + 'px';
-  enemy.style.top = posY + 'px';
-
-  const centerX = containerWidth / 2;
-  const centerY = containerHeight / 2;
-
-  const dx = centerX - posX;
-  const dy = centerY - posY;
-
-  const angle = Math.atan2(dy, dx);
-  const speed = 1; // Adjust the speed as needed
-
-  const moveInterval = setInterval(() => {
-    posX += Math.cos(angle) * speed;
-    posY += Math.sin(angle) * speed;
-
-    enemy.style.left = posX + 'px';
-    enemy.style.top = posY + 'px';
-
-    // Check if the enemy reached the center
-    if (Math.abs(posX - centerX) < enemyWidth / 2 && Math.abs(posY - centerY) < enemyHeight / 2) {
-      clearInterval(moveInterval);
-      enemy.remove();
-    }
-  }, 10); // Adjust the interval as needed
-
-  return moveInterval;
+let player; // the player
+let mousePos = { // the position of the mouse
+  x: 0,
+  y: 0
 }
 
-// Function to start spawning enemies
-function startSpawningEnemies() {
-  setInterval(() => {
-    const enemy = createEnemy();
-    moveEnemy(enemy);
-  }, 2000); // Adjust the interval as needed
+
+// setup
+canvas.width = canvasSize.width;
+canvas.height = canvasSize.height;
+let center = {
+  x: canvasSize.width / 2,
+  y: canvasSize.height / 2
 }
 
-// Start spawning enemies
-startSpawningEnemies();
+// onclick
+document.addEventListener('click', (e) => {
+  // get mouse position
+  let mousePos = {
+    x: e.clientX,
+    y: e.clientY
+  }
+  console.log(mousePos);
+  drawLine(center.x, center.y, mousePos.x, mousePos.y, 10, 'white');
+
+});
+
+function drawLine(x1, y1, x2, y2, width, color) {
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.lineWidth = width;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+}
+
+
+// on resize
+window.addEventListener('resize', () => {
+  console.log('Resizing window...');
+  // update canvas size
+  canvasSize = {
+    width: window.innerWidth,
+    height: window.innerHeight
+  }
+  canvas.width = canvasSize.width;
+  canvas.height = canvasSize.height;
+  center = {
+    x: canvasSize.width / 2,
+    y: canvasSize.height / 2
+  }
+});
+
+socket.on('disconnect', () => {
+  console.log('Disconnected from server.');
+  location.reload();
+});
