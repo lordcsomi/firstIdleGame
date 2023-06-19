@@ -43,10 +43,22 @@ var player = {
 let enemies = []; // array to hold enemies that are currently on the screen aka enemies that are alive
 let enemyCount = 0; // number of enemies that are alive
 let enemyHealth = 100; // health of the enemies
-let enemyMax = 3; // max number of enemies that can be on the screen at once
+let enemyMax = 300; // max number of enemies that can be on the screen at once
 let enemySpeed = 1; // speed of the enemies
 let enemySpawnRate = 1000; // rate at which enemies spawn
 let enemySpawnRateChange = 0; // change in spawn rate
+
+// turet variables
+let turets = []; // array to hold turets that are currently on the screen
+let turetCount = 0; // number of turets that are alive
+let turetHealth = 100; // health of the turets
+let turetMax = 3; // max number of turets that can be on the screen at once
+let turetFireRate = 1000; // rate at which turets fire
+let rings = {
+  "close": 100, // radius of the close ring from the player
+  "medium": 200, // radius of the medium ring from the player
+  "far": 300 // radius of the far ring from the player
+}
 
 // Parameters for particle system
 let particles = []; // array to hold particles that are currently on the screen
@@ -64,7 +76,12 @@ let mouse = { // mouse position
   y: 0,
   clicked: false,
 };
-
+canvas.width = canvasSize.width;
+canvas.height = canvasSize.height;
+let center = {
+  x: canvasSize.width / 2,
+  y: canvasSize.height / 2
+}
 
 // ---------------------------------- //
 // ---------- GAME OBJECTS ---------- //
@@ -220,12 +237,86 @@ class Enemy {
   };
 }
 
-// setup
-canvas.width = canvasSize.width;
-canvas.height = canvasSize.height;
-let center = {
-  x: canvasSize.width / 2,
-  y: canvasSize.height / 2
+function closestEnemy (x, y) {
+  let closest = 0;
+  let closestDistance =
+    Math.sqrt(Math.pow(x - enemies[0].x, 2) + Math.pow(y - enemies[0].y, 2));
+  for (let i = 1; i < enemies.length; i++) {
+    let distance =
+      Math.sqrt(Math.pow(x - enemies[i].x, 2) + Math.pow(y - enemies[i].y, 2));
+    if (distance < closestDistance) {
+      closest = i;
+      closestDistance = distance;
+    }
+  }
+  return enemies[closest];
+}
+
+class Turet { // a little robot that shoots at enemies help the player
+  constructor(x, y, radius, color, firespeed, health, lastshot, distance, angle) {
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.color = color;
+    this.speed = firespeed; // how fast the turet shoots in milliseconds
+    this.last = lastshot;
+    this.health = health;
+    this.distance = distance; // distance from the player
+    this.angle = angle; // angle from the player
+  }
+
+  // the turet will shoot at the closest enemy
+  update() {
+    // use the closestEnemy function to get the closest enemy
+    let closest = closestEnemy(this.x, this.y);
+    // get angle between turet and closest enemy
+    let angle = Math.atan2(closest.y - this.y, closest.x - this.x);
+    // check if the turet can shoot
+    if (Date.now() - this.last > this.speed) {
+      // shoot
+      fireLines.push(new FireLine(this.x, this.y, closest.x, closest.y, 2, this.color, 10));
+      // update last shot
+      this.last = Date.now();
+    }
+  }
+
+  // render turet on canvas
+  render() {
+    drawPolygon(this.x, this.y, this.radius, player.vertices, this.color, player.rotation);
+  }
+}
+
+function summonTuret(distance) {
+  // count how many turets are on the rings
+  let count = 0;
+  for (let i = 0; i < turets.length; i++) {
+    if (turets[i].distance == distance) {
+      count++;
+    }
+  }
+  if(count > 0){
+    turets.push(new Turet(center.x, center.y, 10, 'blue', 1000, 100, Date.now(), distance, 0));
+    count++;
+    // calculate the angle between each turet
+    let angle = 2 * Math.PI / count;
+    // move the turets to the new positions
+    for (let i = 0; i < turets.length; i++) {
+      if (turets[i].distance == distance) {
+        turets[i].angle += angle;
+        turets[i].x = center.x + distance * Math.cos(turets[i].angle);
+        turets[i].y = center.y + distance * Math.sin(turets[i].angle);
+      }
+    }
+  } else {
+  // summon turet at a random angle on the ring
+  let angle = Math.random() * 2 * Math.PI;
+  // calculate the x and y position of the turet
+  let x = center.x + distance * Math.cos(angle);
+  let y = center.y + distance * Math.sin(angle);
+  // add turet to the turets array
+  turets.push(new Turet(x, y, 10, 'blue', 1000, 100, Date.now(), distance, angle));
+  }
+
 }
 
 // ---------------------------------- //
@@ -254,8 +345,11 @@ function drawPolygon(x, y, radius, vertices, color, rotation) {
 // ---------------------------------- //
 // ---------- GAME LOOP -------- //
 // ---------------------------------- //
+// for now
+//turets.push(new Turet(player.x, player.y, 10, 'blue', 20, 100, Date.now()));
+//turets.push(new Turet(player.x, player.y, 10, 'blue', 15, 100, Date.now()));
 
-// update
+
 function updateGame(){
   ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
 
@@ -292,6 +386,7 @@ function updateGame(){
     enemyMax += 0.1;
     enemySpawnRate -= 10;
   }
+  drawPolygon(player.x, player.y, player.radius, player.vertices, player.color, player.rotation);  
 
   // update enemies
   for(let i = 0; i < enemies.length; i++){
@@ -301,11 +396,11 @@ function updateGame(){
       enemies[i].render();
     }
   }
-  // update particles
-  for(let i = 0; i < particles.length; i++){
-    particles[i].update();
-    if (particles[i] != null){
-      particles[i].render();
+  // update turets
+  for(let i = 0; i < turets.length; i++){
+    turets[i].update();
+    if (turets[i] != null){
+      turets[i].render();
     }
   }
   // update fire lines
@@ -315,9 +410,15 @@ function updateGame(){
       fireLines[i].render();
     }
   }
+  // update particles
+  for(let i = 0; i < particles.length; i++){
+    particles[i].update();
+    if (particles[i] != null){
+      particles[i].render();
+    }
+  }
   // update player rotate and render
-  drawPolygon(player.x, player.y, player.radius, player.vertices, player.color, player.rotation);
-  
+  console.log(particles.length);
   requestAnimationFrame(updateGame);
 }
 
@@ -330,7 +431,8 @@ document.addEventListener('click', (e) => {
     x: e.clientX,
     y: e.clientY
   }
-  fireLines.push(new FireLine(center.x, center.y, mousePos.x, mousePos.y, 2, 'magenta', 10));
+  summonTuret(rings.close);
+  fireLines.push(new FireLine(center.x, center.y, mousePos.x, mousePos.y, 3, 'magenta', 10));
   // spawn particles
   for (let i = 0; i < 15; i++) {
     particles.push(new Particle(mousePos.x, mousePos.y, Math.random() * 10 - 5, Math.random() * 10 - 5, '255,0,255', 5, 15));
