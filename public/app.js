@@ -287,36 +287,50 @@ class Turet { // a little robot that shoots at enemies help the player
 }
 
 function summonTuret(distance) {
-  // count how many turets are on the rings
-  let count = 0;
-  for (let i = 0; i < turets.length; i++) {
-    if (turets[i].distance == distance) {
-      count++;
+  const existingTurrets = []; // Array to store existing turrets with the same distance
+
+  // Iterate through all existing turrets and filter those with the same distance
+  for (const turret of turets) {
+    if (turret.distance === distance) {
+      existingTurrets.push(turret);
     }
-  }
-  if(count > 0){
-    turets.push(new Turet(center.x, center.y, 10, 'blue', 1000, 100, Date.now(), distance, 0));
-    count++;
-    // calculate the angle between each turet
-    let angle = 2 * Math.PI / count;
-    // move the turets to the new positions
-    for (let i = 0; i < turets.length; i++) {
-      if (turets[i].distance == distance) {
-        turets[i].angle += angle;
-        turets[i].x = center.x + distance * Math.cos(turets[i].angle);
-        turets[i].y = center.y + distance * Math.sin(turets[i].angle);
-      }
-    }
-  } else {
-  // summon turet at a random angle on the ring
-  let angle = Math.random() * 2 * Math.PI;
-  // calculate the x and y position of the turet
-  let x = center.x + distance * Math.cos(angle);
-  let y = center.y + distance * Math.sin(angle);
-  // add turet to the turets array
-  turets.push(new Turet(x, y, 10, 'blue', 1000, 100, Date.now(), distance, angle));
   }
 
+  const turretCount = existingTurrets.length; // Number of existing turrets with the same distance
+
+  // Calculate the angle between turrets based on the turret count
+  const angleBetweenTurrets = (2 * Math.PI) / (turretCount + 1); // Add 1 for the new turret
+
+  // Calculate the initial angle for the first turret based on the turret count
+  const initialAngle = Math.random() * 2 * Math.PI;
+
+  // Iterate through existing turrets to update their positions
+  for (let i = 0; i < turretCount; i++) {
+    const turret = existingTurrets[i];
+
+    // Calculate the new angle for each turret
+    const newAngle = initialAngle + i * angleBetweenTurrets;
+
+    // Calculate the new x and y positions for each turret based on the distance and angle
+    const newX = player.x + distance * Math.cos(newAngle);
+    const newY = player.y + distance * Math.sin(newAngle);
+
+    // Update the turret's position
+    turret.x = newX;
+    turret.y = newY;
+  }
+
+  // Create a new turret at the desired distance
+  const newTurret = new Turet(0, 0, 10, 'blue', 1000, 100, 0, distance, 0); // Replace the constructor arguments with your desired values
+
+  // Update the new turret's position
+  const newAngle = initialAngle + turretCount * angleBetweenTurrets;
+  newTurret.x = player.x + distance * Math.cos(newAngle);
+  newTurret.y = player.y + distance * Math.sin(newAngle);
+
+  // Add the new turret to the existing turrets array and the turets array
+  existingTurrets.push(newTurret);
+  turets = existingTurrets;
 }
 
 // ---------------------------------- //
